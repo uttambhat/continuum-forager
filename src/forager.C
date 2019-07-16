@@ -1,6 +1,6 @@
 #include "../include/forager.h"
 
-std::mt19937 gen_forager(3);
+std::mt19937 gen_forager(2);
 
 random_forager::random_forager(double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time)
 {

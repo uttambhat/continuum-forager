@@ -12,9 +12,6 @@ using namespace std;
 
 void run_simulation()
 {
-	// Seed random number generator
-	mt19937 gen(1);
-	
 	// Declare resource_map and set regrowth rate. Args: number of points on the map, Brownian step-size (default set to 0.01)
 	resource_map_Brownian MapA(100000,0.01L);
 	double regrowth_rate=10000.L;
@@ -25,15 +22,15 @@ void run_simulation()
 	//MapA.set_zeta(1.L);
 	
 	// set mesh density (does not discretize the actual process. The mesh is only for increasing simulation speed and for visualization)
-	MapA.map_to_mesh(200);
+	MapA.map_to_mesh(100);
 
 	// resolution of delta-time for simulation
-	const double dtime=0.1L;
+	const double dtime=0.01L;
 	
 	double time=0.L;
 
 	// Initialize Population vector
-	int number_of_species=5;
+	int number_of_species=2;
 	vector<forager_population> Forager_Population;
 	Forager_Population.resize(number_of_species);
 	
@@ -54,6 +51,10 @@ void run_simulation()
 
 	// Background color of visualization
 	glClearColor(1.0, 1.0, 1.0, 1.0);
+#if D==3
+	glRotatef(30.,0.0,1.0,.0);
+	glRotatef(30.,1.0,.0,0.0);
+#endif
 
 	// Loop around for maximum number of iterations
 	for(int i=0; i<1000000; i++)
@@ -91,7 +92,6 @@ void run_simulation()
 		if(i%1==0)
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
-
 			glPointSize(10.0f);
 			glBegin(GL_POINTS);
 			for(int i=0; i<MapA._mesh.size(); i++)
@@ -103,8 +103,12 @@ void run_simulation()
 				for(int j=0; j<MapA._mesh[i].size(); j++) total_resource_in_cell += MapA._resource_quantity[MapA._mesh[i][j]];
 				double scaled_total_resource_in_cell=total_resource_in_cell/10.L;
 				if(scaled_total_resource_in_cell>1.L) scaled_total_resource_in_cell=1.L;
-				glColor3d(1.L-scaled_total_resource_in_cell, 1.L-0.4*scaled_total_resource_in_cell,1.L-scaled_total_resource_in_cell);
-				glVertex2d(position[0],position[1]);
+				glColor4f(1.L-scaled_total_resource_in_cell, 1.L-0.4*scaled_total_resource_in_cell,1.L-scaled_total_resource_in_cell,0.);
+#if D==2
+				glVertex2f(position[0],position[1]);
+#elif D==3
+				glVertex3f(position[0],position[1],position[2]);
+#endif
 			}
 			glEnd();
 
@@ -114,11 +118,42 @@ void run_simulation()
 				glBegin(GL_POINTS);
 				for(int i=0; i<Forager_Population[n]._member.size(); i++)
 				{
-					glColor3d((0.2+0.8*(float)(number_of_species-n)/(float)number_of_species),0.,0.);
-					glVertex2d(2.L*Forager_Population[n]._member[i]._position[0]-1.L,2.L*Forager_Population[n]._member[i]._position[1]-1.L);
+					glColor4f((0.2+0.8*(float)(number_of_species-n)/(float)number_of_species),0.,0.,0.2);
+#if D==2
+					glVertex2f(2.L*Forager_Population[n]._member[i]._position[0]-1.L,2.L*Forager_Population[n]._member[i]._position[1]-1.L);
+#elif D==3
+					glVertex3f(2.L*Forager_Population[n]._member[i]._position[0]-1.L,2.L*Forager_Population[n]._member[i]._position[1]-1.L, 2.L*Forager_Population[n]._member[i]._position[2]-1.L);
+#endif
 				}
 				glEnd();
 			}
+#if D==2
+			glLineWidth(10.0f);
+			glBegin(GL_LINES);
+			glVertex2f(-1.,-1.);
+			glVertex2f(1.,-1.);
+			glEnd();
+			glBegin(GL_LINES);
+			glVertex2f(-1.,-1.);
+			glVertex2f(-1.,1.);
+			glEnd();
+#elif D==3
+			glLineWidth(10.0f);
+			glBegin(GL_LINES);
+			glVertex3f(-1.,-1.,-1.);
+			glVertex3f(1.,-1.,-1.);
+			glEnd();
+			glBegin(GL_LINES);
+			glVertex3f(-1.,-1.,-1.);
+			glVertex3f(-1.,1.,-1.);
+			glEnd();
+			glBegin(GL_LINES);
+			glVertex3f(-1.,-1.,-1.);
+			glVertex3f(-1.,-1.,1.);
+			glEnd();
+#endif
+
+
 			glFlush();
 		}
 	}
@@ -132,8 +167,10 @@ int main(int argc, char **argv)
 	if(argc==1)
 	{
 		glutInit(&argc, argv);
-		glutInitDisplayMode(GLUT_SINGLE);
-		glutInitWindowSize(1000, 1000);
+		glutInitDisplayMode(GLUT_SINGLE|GLUT_RGBA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable( GL_BLEND );
+   		glutInitWindowSize(1000, 1000);
 		glutInitWindowPosition(100, 100);
 		glutCreateWindow("Foraging simulation");
 		glutDisplayFunc(run_simulation);

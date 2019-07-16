@@ -1,6 +1,6 @@
 #include "../include/resource_map.h"
 
-std::mt19937 gen_resource_map(2);
+std::mt19937 gen_resource_map(1);
 
 void resource_map_base::print_map()
 {
