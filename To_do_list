@@ -1,0 +1,61 @@
+Checkout fractal landscapes paper and compare to two species competition
+
+Coherence and conservation
+
+mixing zetas
+
+mu zeta and number of species
+
+slope of a Damuth's law as a function of zeta
+
+Make a function to sum maps.
+
+Make a consume function to consume from selected (multiple) maps
+
+Add CUDA kernels to speed up code
+
+Adapt code for 3D visualization
+
+
+-------------------------------------------------
+Global time instead of time tied to a forager
+
+
+Priority
+-----------
+Resource regeneration
+Add periodic boundary conditions condition
+two individuals with different masses
+
+Single species single individual
+---------------
+1. Add regrowth at fixed positions
+2. Optimal field-of-vision, optimal intelligence
+3. Life-history parameter optimization
+4. Food-time distribution as a function of zeta
+5. Gravity model sensing distance vs zeta optimality
+
+
+Single species population
+-------------------
+1. Island size rule
+2. Optimal field-of-vision,
+3. Life-history parameter optimization
+
+
+Multispecies single individual per species
+----------------------------------
+1. Efficiency of clearing resources with multiple 
+2. Island size, mass, mass+dmass competition
+
+
+Multispecies population
+--------------------
+1. Population
+
+
+
+Comparisons
+----------
+Compare to NSM timescales of starvation and reproduction
+
