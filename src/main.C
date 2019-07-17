@@ -5,6 +5,7 @@
 #include "../include/generic/output_functions.h"
 #include "../include/foraging_output_functions.h"
 
+// Set Visualize to 1 to have on screen visualization. Set to O otherwise.
 #define VISUALIZE 0
 
 #if VISUALIZE
