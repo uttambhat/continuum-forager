@@ -1,6 +1,6 @@
 #include "../include/resource_map.h"
 
-std::mt19937 gen_resource_map(1);
+//std::mt19937 randomness_generator(1);
 
 void resource_map_base::print_map()
 {
@@ -23,7 +23,7 @@ void resource_map_base::print_map_to_file(char *outputfilename)
 	output.close();
 }
 
-double resource_map_base::measure_zeta(int configurations)
+double resource_map_base::measure_zeta(std::mt19937& randomness_generator, int configurations)
 {
 	std::vector<std::vector<double> > data;
 	for(double size=0.01; size<0.1; size+=0.01)
@@ -34,7 +34,7 @@ double resource_map_base::measure_zeta(int configurations)
 		{
 			double total=0.L;
 			double box[D]={0.L};
-			for(int d=0; d<D; d++) box[d]=random_location(gen_resource_map);
+			for(int d=0; d<D; d++) box[d]=random_location(randomness_generator);
 			for(int i=0; i<_position.size(); i++)
 			{
 				bool is_inside_box=1;
@@ -125,18 +125,18 @@ void resource_map_base::fill_resources(double quantity)
 	for(int i=0; i<_position.size(); i++) _resource_quantity.push_back(quantity);
 }
 
-void resource_map_base::move_n_random_points(int n)
+void resource_map_base::move_n_random_points(std::mt19937& randomness_generator, int n)
 {
 	std::uniform_int_distribution<int> pick_random_point(0,_position.size()-1);
 	std::uniform_real_distribution<double> uniform(0.L,_size);
 	for(int i=0; i<n; i++)
 	{
-		int candidate=pick_random_point(gen_resource_map);
-		for(int d=0; d<D; d++) _position[candidate][d]=uniform(gen_resource_map);
+		int candidate=pick_random_point(randomness_generator);
+		for(int d=0; d<D; d++) _position[candidate][d]=uniform(randomness_generator);
 	}
 }
 
-double resource_map_base::set_zeta(double zeta_target, double zeta_tolerance, int output)
+double resource_map_base::set_zeta(std::mt19937& randomness_generator, double zeta_target, double zeta_tolerance, int output)
 {
 	int measurement_sample_size=10, measurement_configuration_size=8*(1+(D-2)*8);
 	double sumzeta=0.L, sumzeta2=0.L, average_zeta=0.L, average_zeta2=0.L, stdev_zeta=0.L;
@@ -146,7 +146,7 @@ double resource_map_base::set_zeta(double zeta_target, double zeta_tolerance, in
 		measurement_configuration_size *= 2;	
 		for(int sample=0; sample<measurement_sample_size; sample++)
 		{
-			double measured_zeta=measure_zeta(measurement_configuration_size);
+			double measured_zeta=measure_zeta(randomness_generator, measurement_configuration_size);
 			sumzeta += measured_zeta;
 			sumzeta2 += pow(measured_zeta,2);
 		}	
@@ -168,8 +168,8 @@ double resource_map_base::set_zeta(double zeta_target, double zeta_tolerance, in
 		double previous_zeta=average_zeta, current_zeta=0.L;
 		do
 		{
-			move_n_random_points(num_random_points_to_move);
-			current_zeta=measure_zeta(measurement_configuration_size*4);
+			move_n_random_points(randomness_generator, num_random_points_to_move);
+			current_zeta=measure_zeta(randomness_generator, measurement_configuration_size*4);
 			if(std::abs(current_zeta-previous_zeta)<stdev_zeta/2.L) num_random_points_to_move *=2;
 			if(output==1) std::cout << current_zeta << '\t' << num_random_points_to_move << std::endl;
 			previous_zeta=current_zeta;
@@ -180,13 +180,13 @@ double resource_map_base::set_zeta(double zeta_target, double zeta_tolerance, in
 	}
 }
 
-int resource_map_base::regrow(int number_of_sites_to_regrow)
+int resource_map_base::regrow(std::mt19937& randomness_generator, int number_of_sites_to_regrow)
 {
 	int number_of_valid_regrowths=0;
 	while(_empty_sites.size()>0)
 	{
 		std::uniform_int_distribution<int> random_empty_site(0,_empty_sites.size()-1);
-		int site_to_regrow = random_empty_site(gen_resource_map);
+		int site_to_regrow = random_empty_site(randomness_generator);
 		_resource_quantity[_empty_sites[site_to_regrow]] = 1.0L;
 		_resource_count += _resource_quantity[_empty_sites[site_to_regrow]];
 		_empty_sites.erase(_empty_sites.begin()+site_to_regrow);		
@@ -196,7 +196,7 @@ int resource_map_base::regrow(int number_of_sites_to_regrow)
 	return number_of_valid_regrowths;
 }
 
-resource_map::resource_map()
+resource_map::resource_map(std::mt19937& randomness_generator)
 {
 	_size=1.L;
 	_distribution = 'u';
@@ -210,13 +210,13 @@ resource_map::resource_map()
 	for(int i=0; i<_num_patches; i++)
 	{
 		_position[i].resize(D);
-		for(int d=0; d<D; d++) _position[i][d]=uniform(gen_resource_map);
-		_resource_quantity[i] = uniform(gen_resource_map);
+		for(int d=0; d<D; d++) _position[i][d]=uniform(randomness_generator);
+		_resource_quantity[i] = uniform(randomness_generator);
 	}
 
 }
 
-resource_map::resource_map(int num_patches, double size, char distribution)
+resource_map::resource_map(std::mt19937& randomness_generator, int num_patches, double size, char distribution)
 {
 	_size = size;
 	_distribution = distribution;
@@ -234,8 +234,8 @@ resource_map::resource_map(int num_patches, double size, char distribution)
 	{
 		for(int i=0; i<_num_patches; i++)
 		{
-			for(int d=0; d<D; d++) _position[i][d]=uniform(gen_resource_map);
-			_resource_quantity[i] = dist(gen_resource_map);
+			for(int d=0; d<D; d++) _position[i][d]=uniform(randomness_generator);
+			_resource_quantity[i] = dist(randomness_generator);
 		}
 	}
 	else if(_distribution='f')
@@ -266,11 +266,11 @@ resource_map::~resource_map()
 {
 }
 
-void resource_map_fractal::fill_fractal(int levels, int fill, int subdivide, std::vector <std::vector <double> > &position, double x_start[], double x_end[], int seed)
+void resource_map_fractal::fill_fractal(std::mt19937& randomness_generator, int levels, int fill, int subdivide, std::vector <std::vector <double> > &position, double x_start[], double x_end[], int seed)
 {
 	std::vector<int> boxes; 
 	for(int i=0; i<pow(subdivide,D); i++) boxes.push_back(i);
-	std::shuffle(boxes.begin(), boxes.end(), gen_resource_map);
+	std::shuffle(boxes.begin(), boxes.end(), randomness_generator);
 	if(levels>1)
 	{
 		//------------------------------
@@ -281,7 +281,7 @@ void resource_map_fractal::fill_fractal(int levels, int fill, int subdivide, std
 		{
 			double new_x_start[D] = {x_start[0] + (x_end[0]-x_start[0])*((double)(boxes[i]%subdivide))/(double)subdivide, x_start[1] + (x_end[1]-x_start[1])*((double)(boxes[i]/subdivide))/(double)subdivide};
 			double new_x_end[D] = {x_start[0] + (x_end[0]-x_start[0])*((double)(boxes[i]%subdivide+1))/(double)subdivide, x_start[1] + (x_end[1]-x_start[1])*((double)(boxes[i]/subdivide+1))/(double)subdivide};
-			fill_fractal(levels-1, fill, subdivide, position, new_x_start, new_x_end, gen_resource_map());
+			fill_fractal(randomness_generator, levels-1, fill, subdivide, position, new_x_start, new_x_end, randomness_generator());
 		}			
 	}
 	
@@ -293,8 +293,8 @@ void resource_map_fractal::fill_fractal(int levels, int fill, int subdivide, std
 
 		for(int i=0; i<fill; i++)
 		{
-			new_position[0] = x_start[0] + (x_end[0]-x_start[0])*((double)(boxes[i]%subdivide)+uniform(gen_resource_map))/(double)subdivide;
-			new_position[1] = x_start[1] + (x_end[1]-x_start[1])*((double)(boxes[i]/subdivide)+uniform(gen_resource_map))/(double)subdivide;
+			new_position[0] = x_start[0] + (x_end[0]-x_start[0])*((double)(boxes[i]%subdivide)+uniform(randomness_generator))/(double)subdivide;
+			new_position[1] = x_start[1] + (x_end[1]-x_start[1])*((double)(boxes[i]/subdivide)+uniform(randomness_generator))/(double)subdivide;
 			position.push_back(new_position);
 		}
 	}
@@ -303,7 +303,7 @@ void resource_map_fractal::fill_fractal(int levels, int fill, int subdivide, std
 	
 
 
-resource_map_fractal::resource_map_fractal(int levels, int fill, int subdivide, double size)
+resource_map_fractal::resource_map_fractal(std::mt19937& randomness_generator, int levels, int fill, int subdivide, double size)
 {
 	_levels = levels;
 	_fill = fill;
@@ -314,7 +314,7 @@ resource_map_fractal::resource_map_fractal(int levels, int fill, int subdivide, 
 	//-------------------------------
 	
 	double x_start[]={0.L,0.L}, x_end[]={size,size};
-	fill_fractal(_levels, _fill, _subdivide, _position, x_start, x_end, 1);
+	fill_fractal(randomness_generator, _levels, _fill, _subdivide, _position, x_start, x_end, 1);
 	fill_resources(1.L);	
 }
 
@@ -326,7 +326,7 @@ resource_map_fractal::~resource_map_fractal()
 
 
 
-resource_map_Brownian::resource_map_Brownian(int num_patches, double step_size_resource)
+resource_map_Brownian::resource_map_Brownian(std::mt19937& randomness_generator, int num_patches, double step_size_resource)
 {
 	_num_patches=num_patches;
 	_step_size_resource = step_size_resource;
@@ -339,7 +339,7 @@ resource_map_Brownian::resource_map_Brownian(int num_patches, double step_size_r
 
 		for(int d=0; d<D; d++)
 		{
-			position[d] += single_step(gen_resource_map);
+			position[d] += single_step(randomness_generator);
 			if(position[d]<0.L) position[d]=0.L;
 			if(position[d]>=1.L) position[d]=1.L-0.00000000001L;
 		}

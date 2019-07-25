@@ -15,12 +15,12 @@ class forager_population
 	~forager_population();
 	void initialize(random_forager Forager_Template);
 
-	void move(double time);
+	void move(std::mt19937& randomness_generator, double time);
 	void consume_resource(resource_map_base &Map);
 	void reproduce();
 	void starve();
 
-	void move_consume_reproduce_starve(resource_map_base &Map, double time);
+	void move_consume_reproduce_starve(std::mt19937& randomness_generator, resource_map_base &Map, double time);
 };
 
 #endif

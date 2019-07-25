@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 #include "../include/forager_population.h"
 #include "../include/resource_map.h"
 #include "../include/generic/output_functions.h"
@@ -18,14 +19,24 @@
 
 using namespace std;
 
+#if VISUALIZE
 void run_simulation()
+#else
+void run_simulation(int seed)
+#endif
 {
+#if VISUALIZE
+	mt19937 randomness_generator(1);
+#else
+	mt19937 randomness_generator(seed);
+#endif
+
 	// Declare resource_map. Args: (number of points on the map, Brownian step-size (default set to 0.01))
-	resource_map_Brownian MapA(100000,0.01L);
+	resource_map_Brownian MapA(randomness_generator, 100000,0.01L);
 	
 	// Set regrowth rate of map
 	double regrowth_rate=1000.L;
-	cout << MapA.measure_zeta(1000) << endl;
+	cout << MapA.measure_zeta(randomness_generator, 1000) << endl;
 	cout << MapA.total_resources() << endl;
 
 	// Uncomment to set value of zeta
@@ -52,12 +63,14 @@ void run_simulation()
 		double metabolic_rate=pow(M,0.75), initial_state=30.L*M, reproductive_threshold=100.L*M, reproduction_aftermath_state=30.L*M, velocity=0.1L*pow(M,0.25), incorporation_radius=0.01L*pow(M,0.75);
 		
 		// Initialize population
-		random_forager Forager_Template(metabolic_rate, initial_state, reproductive_threshold, reproduction_aftermath_state, velocity, incorporation_radius);
+		random_forager Forager_Template(randomness_generator, metabolic_rate, initial_state, reproductive_threshold, reproduction_aftermath_state, velocity, incorporation_radius);
 		Forager_Population[n].initialize(Forager_Template);
 	}
 
-	// set output file for population summary
-	ofstream output_population_size; output_population_size.open("data/population_size_2");
+	// set output file for population summary. Filename indexed with the seed (to run large batches)
+	char output_filename[50]="data/population_size_00000";
+	update_filename_index(output_filename, seed, 5);
+	ofstream output_population_size; output_population_size.open(output_filename);
 
 #if VISUALIZE
 	// Background color of visualization
@@ -74,7 +87,7 @@ void run_simulation()
 		// Loop over each species
 		for(int n=0; n<Forager_Population.size(); n++)
 		{
-			Forager_Population[n].move(dtime);
+			Forager_Population[n].move(randomness_generator, dtime);
 			Forager_Population[n].consume_resource(MapA);
 			Forager_Population[n].reproduce();
 			Forager_Population[n].starve();
@@ -92,7 +105,7 @@ void run_simulation()
 		if(all_extinct) break;
 
 		// Regrow resource
-		MapA.regrow((int)(regrowth_rate*dtime));
+		MapA.regrow(randomness_generator, (int)(regrowth_rate*dtime));
 		
 		// update time
 		time += dtime;
@@ -163,7 +176,9 @@ int main(int argc, char **argv)
 	glutDisplayFunc(run_simulation);
 	glutMainLoop();
 #else
-	run_simulation();
+	int seed=1;
+	if(argc>1) seed=atoi(argv[1]);
+	run_simulation(seed);
 #endif
 	return 0;
 }

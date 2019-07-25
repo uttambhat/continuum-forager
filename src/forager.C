@@ -1,8 +1,8 @@
 #include "../include/forager.h"
 
-std::mt19937 gen_forager(2);
+//std::mt19937 randomness_generator(1);
 
-random_forager::random_forager(double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time)
+random_forager::random_forager(std::mt19937& randomness_generator, double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time)
 {
 	_sensing_radius = sensing_radius;
 	_metabolic_rate = metabolic_rate;
@@ -14,7 +14,7 @@ random_forager::random_forager(double metabolic_rate, double initial_state, doub
 	_handling_time = handling_time;
 	_lifetime = 0.L;
 	std::uniform_real_distribution<double> uniform(0.L, 1.L);
-	for(int d=0; d<D; d++) _position.push_back(uniform(gen_forager));
+	for(int d=0; d<D; d++) _position.push_back(uniform(randomness_generator));
 }
 
 random_forager::~random_forager()
@@ -29,13 +29,13 @@ double random_forager::distance(std::vector<double> &x, std::vector<double> &y)
 }
 
 
-void random_forager::move_forager(double time)
+void random_forager::move_forager(std::mt19937& randomness_generator, double time)
 {
 	_step_size=_velocity*time;
 	std::normal_distribution<double> single_step(0.L,_step_size);
 	for(int d=0; d<D; d++)
 	{
-		_position[d] += single_step(gen_forager);
+		_position[d] += single_step(randomness_generator);
 		
 		if(_position[d]<0.L) _position[d]=0.L; // TO BE CHANGED TO ACCEPT DIFFERENT MAP SIZES
 		if(_position[d]>1.L) _position[d]=1.L-0.000000001L;

@@ -21,10 +21,10 @@ class random_forager
 	
 	std::vector<double> _position;
 	
-	random_forager(double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time=0.L);
+	random_forager(std::mt19937& randomness_generator, double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time=0.L);
 	~random_forager();
 	double distance(std::vector<double> &x, std::vector<double> &y);
-	void move_forager(double time=0.1L);
+	void move_forager(std::mt19937& randomness_generator, double time=0.1L);
 	void consume_resource(resource_map_base &Map);
 	void custom_linear_index_to_nD_index(int linear_index, int *nD_index, int nD_index_max);
 };

@@ -20,11 +20,11 @@ void forager_population::initialize(random_forager Forager_Template)
 	_member.push_back(Forager_Template);
 }
 
-void forager_population::move(double time)
+void forager_population::move(std::mt19937& randomness_generator, double time)
 {
 	for(int i=0; i<_member.size(); i++)
 	{
-		_member[i].move_forager(time);
+		_member[i].move_forager(randomness_generator, time);
 	}
 }
 
@@ -59,11 +59,11 @@ void forager_population::starve()
 	}
 }
 
-void forager_population::move_consume_reproduce_starve(resource_map_base &Map, double time)
+void forager_population::move_consume_reproduce_starve(std::mt19937& randomness_generator, resource_map_base &Map, double time)
 {
 	for(int i=0; i<_member.size(); i++)
 	{
-		_member[i].move_forager(time);
+		_member[i].move_forager(randomness_generator, time);
 		_member[i].consume_resource(Map);
 		if(_member[i]._state>_member[i]._reproductive_threshold)
 		{
