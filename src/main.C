@@ -51,7 +51,7 @@ void run_simulation(int seed)
 	double time=0.L;
 
 	// Initialize Population vector
-	int number_of_species=3;
+	int number_of_species=4;
 	vector<forager_population> Forager_Population;
 	Forager_Population.resize(number_of_species);
 	
