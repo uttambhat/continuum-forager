@@ -44,22 +44,24 @@ void forager_population::reproduce()
 		{
 			_member[i]._state=_member[i]._reproductive_aftermath_state;
 			_member.push_back(_member[i]);
+			_member.back()._lifetime=0.L;
 		}
 	}
 }
 
-void forager_population::starve()
+void forager_population::kill(std::mt19937& randomness_generator, double time)
 {
 	for(int i=0; i<_member.size(); i++)
 	{
-		if(_member[i]._state<0.L)
+		std::bernoulli_distribution bernoulli(time/_member[i]._lifespan);
+		if(_member[i]._state<0.L||bernoulli(randomness_generator)==1)
 		{
 			_member.erase(_member.begin()+i);	
 		}
 	}
 }
 
-void forager_population::move_consume_reproduce_starve(std::mt19937& randomness_generator, resource_map_base &Map, double time)
+void forager_population::move_consume_reproduce_kill(std::mt19937& randomness_generator, resource_map_base &Map, double time)
 {
 	for(int i=0; i<_member.size(); i++)
 	{
@@ -70,7 +72,7 @@ void forager_population::move_consume_reproduce_starve(std::mt19937& randomness_
 			_member[i]._state=_member[i]._reproductive_aftermath_state;
 			_member.push_back(_member[i]);
 		}
-		if(_member[i]._state<0.L)
+		if(_member[i]._state<0.L||_member[i]._lifetime>_member[i]._lifespan)
 		{
 			_member.erase(_member.begin()+i);	
 		}

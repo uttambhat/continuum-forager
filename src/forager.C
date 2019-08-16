@@ -1,8 +1,6 @@
 #include "../include/forager.h"
 
-//std::mt19937 randomness_generator(1);
-
-random_forager::random_forager(std::mt19937& randomness_generator, double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double handling_time)
+random_forager::random_forager(std::mt19937& randomness_generator, double metabolic_rate, double initial_state, double reproductive_threshold, double reproductive_aftermath_state, double velocity, double sensing_radius, double lifespan)
 {
 	_sensing_radius = sensing_radius;
 	_metabolic_rate = metabolic_rate;
@@ -11,8 +9,8 @@ random_forager::random_forager(std::mt19937& randomness_generator, double metabo
 	_reproductive_aftermath_state = reproductive_aftermath_state;
 	_state = _initial_state;
 	_velocity = velocity;
-	_handling_time = handling_time;
 	_lifetime = 0.L;
+	_lifespan = lifespan;
 	std::uniform_real_distribution<double> uniform(0.L, 1.L);
 	for(int d=0; d<D; d++) _position.push_back(uniform(randomness_generator));
 }
@@ -72,8 +70,6 @@ void random_forager::consume_resource(resource_map_base &Map)
 						double resource_reduction = Map._resource_quantity[Map._mesh[linear_index][k]];
 						_state += Map._resource_quantity[Map._mesh[linear_index][k]];
 						Map._resource_quantity[Map._mesh[linear_index][k]]=0.L;
-						_lifetime += _handling_time;
-						_state -= _metabolic_rate*_handling_time;
 						Map._empty_sites.push_back(Map._mesh[linear_index][k]);
 						Map._resource_count -= resource_reduction;
 						//std::cout << Map._resource_quantity[Map._mesh[linear_index][k]] << std::endl;

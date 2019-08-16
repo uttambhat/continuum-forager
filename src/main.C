@@ -1,13 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <stdio.h>
 #include "../include/forager_population.h"
 #include "../include/resource_map.h"
 #include "../include/generic/output_functions.h"
 #include "../include/foraging_output_functions.h"
 
 // Set Visualize to 1 to have on screen visualization. Set to O otherwise.
-#define VISUALIZE 0
+#define VISUALIZE 1
+#define SAVE_VISUALIZATION 0
 
 #if VISUALIZE
 #include "GL/freeglut.h"
@@ -40,7 +42,7 @@ void run_simulation(int seed)
 	cout << MapA.total_resources() << endl;
 
 	// Uncomment to set value of zeta
-	//MapA.set_zeta(1.L);
+	//MapA.set_zeta(randomness_generator, 1.L);
 	
 	// set mesh density (does not discretize the actual process. The mesh is only for increasing simulation speed and for visualization)
 	MapA.map_to_mesh(100);
@@ -51,7 +53,7 @@ void run_simulation(int seed)
 	double time=0.L;
 
 	// Initialize Population vector
-	int number_of_species=4;
+	int number_of_species=5;
 	vector<forager_population> Forager_Population;
 	Forager_Population.resize(number_of_species);
 	
@@ -60,17 +62,20 @@ void run_simulation(int seed)
 	{
 		// set physiological parameters
 		double M=pow(2.L,n);
-		double metabolic_rate=pow(M,0.75), initial_state=30.L*M, reproductive_threshold=100.L*M, reproduction_aftermath_state=30.L*M, velocity=0.1L*pow(M,0.25), incorporation_radius=0.01L*pow(M,0.75);
+		double metabolic_rate=pow(M,0.75), initial_state=30.L*M, reproductive_threshold=100.L*M, reproduction_aftermath_state=30.L*M, velocity=0.1L*pow(M,0.25)/sqrt(10.L), incorporation_radius=0.01L*pow(M,0.5), lifespan=numeric_limits<double>::infinity();//100.L*pow(M,0.25);//
 		
 		// Initialize population
-		random_forager Forager_Template(randomness_generator, metabolic_rate, initial_state, reproductive_threshold, reproduction_aftermath_state, velocity, incorporation_radius);
+		random_forager Forager_Template(randomness_generator, metabolic_rate, initial_state, reproductive_threshold, reproduction_aftermath_state, velocity, incorporation_radius, lifespan);
 		Forager_Population[n].initialize(Forager_Template);
 	}
 
 	// set output file for population summary. Filename indexed with the seed (to run large batches)
-	char output_filename[50]="data/population_size_00000";
+	char output_filename[50]="data/population_size_00001";
+#if VISUALIZE==0
 	update_filename_index(output_filename, seed, 5);
+#endif
 	ofstream output_population_size; output_population_size.open(output_filename);
+	ofstream output_zeta; output_zeta.open("data/zeta_vs_time_00000");
 
 #if VISUALIZE
 	// Background color of visualization
@@ -81,8 +86,18 @@ void run_simulation(int seed)
 #endif
 #endif
 
+#if VISUALIZE
+#if SAVE_VISUALIZATION
+const char* cmd = "ffmpeg -r 60 -f rawvideo -pix_fmt rgba -s 1280x720 -i - "
+                  "-threads 0 -preset fast -y -pix_fmt yuv420p -crf 21 -vf vflip output.mp4";
+
+// open pipe to ffmpeg's stdin in binary write mode
+FILE* ffmpeg = popen(cmd, "wb");
+#endif
+#endif
+
 	// Loop around for maximum number of iterations
-	for(int i=0; i<1000000; i++)
+	for(int i=0; i<100000; i++)
 	{
 		// Loop over each species
 		for(int n=0; n<Forager_Population.size(); n++)
@@ -90,7 +105,7 @@ void run_simulation(int seed)
 			Forager_Population[n].move(randomness_generator, dtime);
 			Forager_Population[n].consume_resource(MapA);
 			Forager_Population[n].reproduce();
-			Forager_Population[n].starve();
+			Forager_Population[n].kill(randomness_generator, dtime);
 		}
 
 		// Output population summary to file
@@ -98,8 +113,15 @@ void run_simulation(int seed)
 		
 		// Output population summary to screen
 		if(i%100==0) print(time, MapA, Forager_Population);
+/*		if(i%1000==0)
+		{ 
+			double measured_zeta=MapA.measure_zeta(randomness_generator, 1000);
+			cout << measured_zeta << endl;
+			output_zeta << time << '\t' << measured_zeta << endl;
+		}
+*/
 
-		// If all species are extinct, exit for loop
+		// If all species are extinct, exit for-loop
 		bool all_extinct=0;
 		for(int n=0; n<Forager_Population.size(); n++) all_extinct=all_extinct&&(Forager_Population[n]._member.size()==0);
 		if(all_extinct) break;
@@ -118,6 +140,9 @@ void run_simulation(int seed)
 		// update visualization. Use the if condition to adjust time-resolution of visualization
 		if(i%1==0)
 		{
+#if SAVE_VISUALIZATION
+			unsigned char pixels[800*600*3];
+#endif
 			glClear(GL_COLOR_BUFFER_BIT);
 			glPointSize(10.0f);
 			glBegin(GL_POINTS);
@@ -141,7 +166,7 @@ void run_simulation(int seed)
 
 			for(int n=0; n<Forager_Population.size(); n++)
 			{
-				glPointSize((((float)n+1.))*3.);
+				glPointSize((((float)Forager_Population[n]._member[0]._metabolic_rate))*5.);
 				glBegin(GL_POINTS);
 				glColor4f((0.2+0.8*(float)(number_of_species-n)/(float)number_of_species),0.,0.,0.2);
 				for(int i=0; i<Forager_Population[n]._member.size(); i++)
@@ -155,10 +180,23 @@ void run_simulation(int seed)
 				glEnd();
 			}
 			glFlush();
+#if VISUALIZE
+#if SAVE_VISUALIZATION
+	glReadPixels(0, 0, 600, 800, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	fwrite(pixels, sizeof(int)*600*800, 1, ffmpeg);			
+#endif
+#endif
 		}
+
 #endif
 	}
+#if VISUALIZE
+#if SAVE_VISUALIZATION
+	if(ffmpeg) pclose(ffmpeg);
+#endif
+#endif
 	output_population_size.close();
+	output_zeta.close();
 
 
 }
@@ -171,7 +209,7 @@ int main(int argc, char **argv)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable( GL_BLEND );
 	glutInitWindowSize(1000, 1000);
-	glutInitWindowPosition(100, 100);
+	glutInitWindowPosition(100, 0);
 	glutCreateWindow("Foraging simulation");
 	glutDisplayFunc(run_simulation);
 	glutMainLoop();

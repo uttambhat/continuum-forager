@@ -1,7 +1,5 @@
 #include "../include/resource_map.h"
 
-//std::mt19937 randomness_generator(1);
-
 void resource_map_base::print_map()
 {
 	for(int i=0; i<_position.size(); i++)
@@ -22,6 +20,11 @@ void resource_map_base::print_map_to_file(char *outputfilename)
 	}
 	output.close();
 }
+
+/*
+measure_zeta(mt19937& randomness_generator, int configurations) is a measure of clustering in the resource environment. Specifically, it is the scaling exponent between the variance and area of measurement.
+
+*/
 
 double resource_map_base::measure_zeta(std::mt19937& randomness_generator, int configurations)
 {
